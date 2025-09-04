@@ -1,0 +1,20 @@
+version = 1
+revision = 3
+requires-python = ">=3.12"
+
+[[package]]
+name = "matlabengine"
+version = "25.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/47/da72601064fe29b9b9d40f138fee1bda7d7ca436166bbf2437a31874fb99/matlabengine-25.1.2.tar.gz", hash = "sha256:b07da90e585273343762eb3a2565641f41e5dd801aa23b573eecc820618004bd", size = 18890, upload-time = "2025-01-22T13:57:01.712Z" }
+
+[[package]]
+name = "matlabgraderbot"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "matlabengine" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "matlabengine", specifier = ">=25.1.2" }]
