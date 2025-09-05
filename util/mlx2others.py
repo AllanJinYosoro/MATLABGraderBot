@@ -4,7 +4,7 @@ import os
 
 import matlab.engine
 
-def mlx2html(eng, mlx_input_path, html_output_path: matlab.engine.MatlabEngine):
+def mlx2others(eng, mlx_input_path, html_output_path: matlab.engine.MatlabEngine):
     mlx_input_path = os.path.abspath(mlx_input_path)
     html_output_path = os.path.abspath(html_output_path)
     eng.matlab.internal.liveeditor.openAndConvert(mlx_input_path, html_output_path, nargout=0)
