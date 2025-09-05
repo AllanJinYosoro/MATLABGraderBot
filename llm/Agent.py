@@ -22,16 +22,16 @@ class Agent:
         question, solution, score = self._read_question(question_num)
 
         completion = self.client.chat.completions.create(
-            model="qwen3-coder-flash",
+            model="qwen-flash",
             messages=[
                 {'role': 'system', 'content': r"""
                     你是一位精通 MATLAB 的教授，负责批改学生的作业。你的任务是：
-                    1. 公正地判断学生提交的代码是否正确。
-                    2. 按照给你的总分，根据其正确程度给出分数。
+                    1. 判断学生提交的代码是否正确。学生们都是初学者，请大体上放水一点，可以对不重要的错误睁一只眼闭一只眼。只要其大体功能实现，便可认为其完成作答。
+                    2. 按照给你的总分，根据其正确程度给出分数。不重要的小错误就象征性扣一点点分数。
                     3. 如果有错误，需要指出清晰的错误原因；如果完全正确，错误原因留空。
                     
                     输出格式必须是 JSON，且为一个三元素 tuple：[是否正确 (true/false), 分数 (整数), 错误原因 (字符串)]。
-                    不要输出json ```，而是直接输出一个合法json
+                    不要输出json ```，而是直接输出一个合法json。如果你需要在文本中使用双引号，需要使用\" 以符合json语法
                     示例：
                         正确情况输出：[true, 95, \"\"]
                         错误情况输出：[false, 60, \"循环语句未正确结束，导致运行错误\"]
