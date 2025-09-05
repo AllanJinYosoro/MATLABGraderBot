@@ -248,6 +248,7 @@ dependencies = [
     { name = "lxml" },
     { name = "matlabengine" },
     { name = "openai" },
+    { name = "tqdm" },
 ]
 
 [package.metadata]
@@ -257,6 +258,7 @@ requires-dist = [
     { name = "lxml", specifier = ">=6.0.1" },
     { name = "matlabengine", specifier = ">=25.1.2" },
     { name = "openai", specifier = ">=1.106.1" },
+    { name = "tqdm", specifier = ">=4.67.1" },
 ]
 
 [[package]]
