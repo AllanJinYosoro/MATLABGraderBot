@@ -74,3 +74,7 @@ data/raw/
 ```
 
 📌 提交文件需参考项目中提供的 template.mlx。
+
+# TODO
+1. 增加logger
+2. 考虑mlx应用别的函数m和函数mlx
