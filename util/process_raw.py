@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 
 from .mlx2others import mlx2others, matlab_engine
 
@@ -29,17 +29,18 @@ def process_raw(raw_dir: str = "./data/raw", processed_dir: str = "./data/proces
 
                     #2. 切分markdown
                     question_output_dir = os.path.dirname(md_output_path)
-                    split_by_question(md_output_path, question_output_dir)
+                    split_by_question(root, md_output_path, question_output_dir)
 
 
                     print(f"Processed {mlx_input_path} to {md_output_path}")
     
 
-def split_by_question(md_file: str, output_dir: str) -> None:
+def split_by_question(m_dir: str, md_file: str, output_dir: str) -> None:
     """
     按题目切分markdown文件
     
     Args:
+        m_dir: 原始文件路径（提供.m funciton file)
         md_file: 输入的markdown文件路径
         output_dir: 输出目录路径
     """
@@ -49,15 +50,18 @@ def split_by_question(md_file: str, output_dir: str) -> None:
     
     # 提取所有题目内容
     questions: List[Tuple[int, str]] = _extract_questions(content)
+    m_func_dict: Dict[str,str] = _collect_m_function_files(m_dir)
+    questions = [(question_num, _append_m_dependencies(code_block,m_func_dict))
+                  for (question_num, code_block) in questions]
     
     # 为每个题目创建目录并保存文件
-    for question_num, question_content in questions:
+    for question_num, code_block in questions:
         question_dir = os.path.join(output_dir, str(question_num))
         os.makedirs(question_dir, exist_ok=True)
         
         answer_file = os.path.join(question_dir, "answer.md")
         with open(answer_file, 'w', encoding='utf-8') as f:
-            f.write(question_content.strip())
+            f.write(code_block.strip())
 
 
 def _extract_questions(content: str) -> List[Tuple[int, str]]:
@@ -81,3 +85,50 @@ def _extract_questions(content: str) -> List[Tuple[int, str]]:
         questions.append((question_num, question_content))
     
     return questions
+
+def _append_m_dependencies(code_block: str, m_func_dict: Dict[str,str]) -> str:
+    """
+    给定一段 MATLAB 代码块和文件夹路径，
+    如果代码块中调用了外部 .m 文件定义的主函数，
+    就把对应的函数源码附加到代码块后面。
+
+    Args:
+        code_block : 切分后的question code block
+        m_func_dict: function_name:function_code
+
+    Returns:
+        str: 原始代码 + 附加的依赖函数源码
+    """
+    result = code_block
+
+    # 1. 在代码块中查找调用了哪些函数
+    called_funcs = []
+    for name in m_func_dict:
+        # 匹配 “名字(” 的模式，避免混淆变量
+        if re.search(rf'\b{name}\s*\(', code_block):
+            called_funcs.append(name)
+
+    # 2. 按顺序附加源码
+    for cf in called_funcs:
+        result += f"\n\n% === Dependency: {cf}.m ===\n```matlab"
+        result += m_func_dict[cf]
+        result += "```"
+
+    return result
+
+def _collect_m_function_files(folder: str) -> Dict[str,str]:
+    """
+    收集所有外部.m function file
+    """
+    func_dict = {}
+    for fn in os.listdir(folder):
+        if fn.endswith(".m"):
+            func_name = os.path.splitext(fn)[0]
+            file_path = os.path.join(folder, fn)
+            try:
+                with open(file_path, encoding="utf-8") as f:
+                    func_code = f.read()
+                func_dict[func_name] = func_code
+            except Exception as e:
+                print(f"读取 {file_path} 出错: {e}")
+    return func_dict
