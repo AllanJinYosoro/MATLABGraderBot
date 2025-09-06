@@ -27,7 +27,7 @@ async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed")
     async def grade_one(student, qid, answer_path):
         nonlocal total_tokens
         try:
-            is_correct, score, reason, tokens = await grader.invoke(answer_path, int(qid))
+            is_correct, score, reason, tokens = await grader.ainvoke(answer_path, int(qid))
             total_tokens += tokens
         except Exception as e:
             is_correct, score, reason, tokens = False, 0, f"批改失败: {e}", 0

@@ -1,9 +1,13 @@
 import os
+import asyncio
+import json
+from typing import List, Tuple, Dict
+
 from openai import AsyncOpenAI
 from aiolimiter import AsyncLimiter
 from dotenv import load_dotenv
-import json
-from typing import List, Tuple, Dict
+
+from .llm_error import ResponseParseError
 
 load_dotenv()
 
@@ -16,14 +20,36 @@ class Agent:
         self.question_dir = "./data/tasks"
         self.model_name = model_name
         self.rate_limit = rate_limit
+        self.try_again_time = 1
 
-    async def invoke(self,
+    async def ainvoke(self,
             answer_file_path: str,
             question_num: int) -> Tuple[bool, int, str, int]:
         
         answer = self._read(answer_file_path)
         question, solution, score = self._read_question(question_num)
 
+        for attempt in range(self.try_again_time + 1):
+            try:
+                completion = await self._invoke(question=question,solution=solution,score=score,answer=answer)
+        
+                return self._process_response(completion)
+            
+            except Exception as e:
+                print(f"[尝试 {attempt+1}] 调用失败: {e}")
+                if attempt < self.try_again_time:
+                    continue
+                else:
+                    if isinstance(e, ResponseParseError):
+                        return (False,0,f"{e}. 原始输出: {e.raw_output}",e.tokens,)
+                    else:
+                        return False, 0, f"多次调用失败: {e}", 0
+    
+    async def _invoke(self,
+            question: str,
+            solution: str,
+            score: str,
+            answer: str):
         async with self.rate_limit:
             completion = await self.client.chat.completions.create(
                 model=self.model_name,
@@ -53,8 +79,7 @@ class Agent:
                         {answer}
                     """}],
                 )
-        
-        return self._process_response(completion)
+            return completion
         
     @staticmethod
     def _read(file_path: str) -> str:
@@ -88,5 +113,8 @@ class Agent:
                 is_correct, grade, reason = result
                 return bool(is_correct), int(grade), str(reason), int(completion.usage.total_tokens)
         except Exception as e:
-            print("警告，存在错误")
-            return False, 0, f"解析模型输出失败: {e}. 原始输出: {raw_output}", int(completion.usage.total_tokens)
+            raise ResponseParseError(
+            f"解析模型输出失败: {e}",
+            raw_output,
+            int(completion.usage.total_tokens),
+        )
