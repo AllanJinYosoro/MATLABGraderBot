@@ -7,12 +7,13 @@ from typing import List, Tuple, Dict
 load_dotenv()
 
 class Agent:
-    def __init__(self):
+    def __init__(self, model_name: str, base_url: str):
         self.client = OpenAI(
             api_key=os.getenv("DASHSCOPE_API_KEY"),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            base_url=base_url
         )
         self.question_dir = "./data/tasks"
+        self.model_name = model_name
 
     def invoke(self,
             answer_file_path: str,
@@ -22,7 +23,7 @@ class Agent:
         question, solution, score = self._read_question(question_num)
 
         completion = self.client.chat.completions.create(
-            model="qwen-flash",
+            model=self.model_name,
             messages=[
                 {'role': 'system', 'content': r"""
                     你是一位精通 MATLAB 的教授，负责批改学生的作业。你的任务是：
