@@ -1,11 +1,11 @@
 import os
 from typing import List, Tuple
-import json
+import asyncio
 from tqdm import tqdm
 
 from llm import Agent
 
-def grade_sequence(grader: Agent, processed_dir: str = "./data/processed") -> None:
+async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed") -> None:
     """
     依次为每个学生的每道题打分，并最终计算每个学生的总得分和最终comments
 
@@ -13,7 +13,6 @@ def grade_sequence(grader: Agent, processed_dir: str = "./data/processed") -> No
         grader: 用以批改的Agent
         processed_dir: 处理后文件输出目录
     """
-    # 收集所有任务 (student, qid, answer_path)
     all_tasks = []
     for student in os.listdir(processed_dir):
         student_path = os.path.join(processed_dir, student)
@@ -25,37 +24,37 @@ def grade_sequence(grader: Agent, processed_dir: str = "./data/processed") -> No
             if os.path.isdir(q_path) and os.path.exists(answer_path):
                 all_tasks.append((student, qid, answer_path))
 
-    total_tokens = 0
+    async def grade_one(student, qid, answer_path):
+        nonlocal total_tokens
+        try:
+            is_correct, score, reason, tokens = await grader.invoke(answer_path, int(qid))
+            total_tokens += tokens
+        except Exception as e:
+            is_correct, score, reason, tokens = False, 0, f"批改失败: {e}", 0
 
-    # 学生汇总结果
+        return student, qid, score, reason
+    
+    tasks = [grade_one(s, q, a) for s, q, a in all_tasks]
+    total_tokens = 0
     student_results = {student: {"total": 0, "comments": []} for student, _, _ in all_tasks}
 
     with tqdm(total=len(all_tasks), desc="批改进度", unit="题") as pbar:
-        for student, qid, answer_path in sorted(all_tasks, key=lambda x: (x[0], int(x[1]))):
-            try:
-                is_correct, score, reason, tokens = grader.invoke(answer_path, int(qid))
-                total_tokens += tokens
-            except Exception as e:
-                print(f"批改失败 for {student}第{qid}题")
-                is_correct, score, reason, tokens = False, 0, f"批改失败: {e}", 0
-
-            # 累加分数
+        for coro in asyncio.as_completed(tasks):
+            student, qid, score, reason = await coro
             student_results[student]["total"] += score
             if reason:
                 student_results[student]["comments"].append(f"Q{qid}:{reason}\n")
-
-            # 更新进度条
-            pbar.set_postfix({
-                "学生": student,
-                "题目": qid,
-                "总tokens": total_tokens
-            })
             pbar.update(1)
 
     # 写入 grade.txt
     for student, result in student_results.items():
         grade_path = os.path.join(processed_dir, student, "grade.txt")
+        sorted_comments = sorted(
+            result["comments"],
+            key=lambda c: int(c.split(":")[0][1:])  # "Q12:..." → 12
+        )
         with open(grade_path, "w", encoding="utf-8") as f:
             f.write(f"{result['total']}\n")
-            f.write(" ".join(result["comments"]))
+            f.write(" ".join(sorted_comments))
         print(f"学生 {student} 结果已保存到 {grade_path}")
+
