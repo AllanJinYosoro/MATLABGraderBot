@@ -3,12 +3,17 @@ import re
 from typing import Optional, List, Tuple, Dict
 
 from .mlx2others import mlx2others, matlab_engine
+from .check_file import check_process_correctness
 
-def process_raw(raw_dir: str = "./data/raw", processed_dir: str = "./data/processed") -> None:
+def process_raw(
+        overlap_mode: bool = False,
+        raw_dir: str = "./data/raw", 
+        processed_dir: str = "./data/processed") -> None:
     """
     批量处理原始目录中的MLX文件
-    1. 转化为Markdown格式
-    2. 按照题号进行切分
+    1. 检查是否已经完成初始化（除非overlap_mode=True）
+    2. 转化为Markdown格式
+    3. 按照题号进行切分
     
     Args:
         raw_dir: 原始文件目录
@@ -16,6 +21,14 @@ def process_raw(raw_dir: str = "./data/raw", processed_dir: str = "./data/proces
     """
     with matlab_engine() as eng:
         for root, dirs, files in os.walk(raw_dir):
+
+            # check if alerady processed
+            subdir_name = os.path.relpath(root, raw_dir)
+            if subdir_name == '.': continue
+            if not overlap_mode and check_process_correctness(subdir_name):
+                print(f"Skip {subdir_name}, already processed correctly.")
+                continue
+            
             for file in files:
                 if file.endswith(".mlx"):
                     mlx_input_path = os.path.join(root, file)
