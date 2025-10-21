@@ -3,13 +3,13 @@ import zipfile
 import shutil
 from datetime import datetime
 
-def unzip_and_flatten(zip_path: str, log_path: str) -> None:
+def unzip_and_flatten(zip_path: str, log_path: str, processed_dir: str) -> None:
     """
     解压缩指定路径的 zip 文件，并调整目录结构。
 
     步骤：
     1. 将 zip 文件解压到与 zip 名称相同的文件夹中。
-    2. 将解压后的文件夹重命名为第一个下划线 (_) 之前的部分。
+    2. 将解压后的文件夹重命名为第一个下划线 (_) 之前的部分。并在processed文件夹中新建同名文件夹
     3. 在解压目录内：
        - 如果没有子文件夹，则完成过程
        - 如果只有一个子文件夹，则将其内部文件（孙子文件）移动到解压目录中，并删除孙子文件夹。
@@ -39,6 +39,7 @@ def unzip_and_flatten(zip_path: str, log_path: str) -> None:
     if os.path.exists(new_dir):
         shutil.rmtree(new_dir)
     os.rename(extract_dir, new_dir)
+    os.makedirs(os.path.join(processed_dir, new_name), exist_ok=True)
     print(f"✅ 已重命名为: {new_dir}")
 
     # Step 3: 处理内部结构

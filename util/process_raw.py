@@ -25,7 +25,7 @@ def process_raw(
         if file.endswith(".zip") and os.path.isfile(os.path.join(raw_dir, file)):
             zip_path = os.path.join(raw_dir, file)
             log_path = os.path.join(raw_dir, "unzip_warnings.log")
-            unzip_and_flatten(zip_path, log_path)
+            unzip_and_flatten(zip_path, log_path, processed_dir)
 
     with matlab_engine() as eng:
         for root, dirs, files in os.walk(raw_dir):
