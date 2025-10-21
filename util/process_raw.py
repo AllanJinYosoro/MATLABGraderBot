@@ -4,21 +4,29 @@ from typing import Optional, List, Tuple, Dict
 
 from .mlx2others import mlx2others, matlab_engine
 from .check_file import check_process_correctness
+from .unzip_raw import unzip_and_flatten
 
 def process_raw(
         overlap_mode: bool = False,
         raw_dir: str = "./data/raw", 
         processed_dir: str = "./data/processed") -> None:
     """
-    批量处理原始目录中的MLX文件
-    1. 检查是否已经完成初始化（除非overlap_mode=True）
-    2. 转化为Markdown格式
-    3. 按照题号进行切分
+    批量处理原始目录中的MLX文件、
+    1. 将raw文件夹中压缩包解压缩 （详细逻辑在unzip_and_flatten）
+    2. 检查是否已经完成初始化（除非overlap_mode=True）（详细逻辑在check_process_correctness）
+    3. 转化为Markdown格式
+    4. 按照题号进行切分
     
     Args:
         raw_dir: 原始文件目录
         processed_dir: 处理后文件输出目录
     """
+    for file in os.listdir(raw_dir):
+        if file.endswith(".zip") and os.path.isfile(os.path.join(raw_dir, file)):
+            zip_path = os.path.join(raw_dir, file)
+            log_path = os.path.join(raw_dir, "unzip_warnings.log")
+            unzip_and_flatten(zip_path, log_path)
+
     with matlab_engine() as eng:
         for root, dirs, files in os.walk(raw_dir):
 
