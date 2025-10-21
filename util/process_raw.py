@@ -98,7 +98,7 @@ def _extract_questions(content: str) -> List[Tuple[int, str]]:
     questions = []
     
     # 使用正则表达式匹配题目开始和结束标记
-    pattern = r'# 以下开始第(\d+)题\s*\n(.*?)\n# 以上结束第\1题'
+    pattern = r'#\s*[以上以下]{2}[开始结束]{2}第(\d+)题\s*\n(.*?)\n#\s*[以上以下]{2}[开始结束]{2}第\1题'
     matches = re.findall(pattern, content, re.DOTALL)
     
     for question_num_str, question_content in matches:
