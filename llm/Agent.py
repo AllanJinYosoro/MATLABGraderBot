@@ -41,9 +41,9 @@ class Agent:
                     continue
                 else:
                     if isinstance(e, ResponseParseError):
-                        return (False,0,f"{e}. 原始输出: {e.raw_output}",e.tokens,)
+                        return (False,None,f"{e}. 原始输出: {e.raw_output}",e.tokens,)
                     else:
-                        return False, 0, f"多次调用失败: {e}", 0
+                        return False, None, f"多次调用失败: {e}", 0
     
     async def _invoke(self,
             question: str,
@@ -83,9 +83,10 @@ class Agent:
                     5. **输出格式**
                     - 返回格式固定为合法 JSON，不要包含 Markdown 标记。
                     - 结果为三元素 tuple：[是否正确 (true/false), 分数 (整数), 错误原因 (字符串)]。
+                    - 请注意根据我输入给你的总分数来评分。比如输入的总分是 15 分，你的评分必须在 0-15 之间。
                     - 示例：
-                            正确情况输出：[true, 100, \"\"]
-                            错误情况输出：[false, 60, \"循环未闭合，导致运行错误\"]
+                            正确情况输出：[true, 15, \"\"]
+                            错误情况输出：[false, 10, \"循环未闭合，导致运行错误\"]
                     """
                             },
                     {'role': 'user', 'content': fr"""

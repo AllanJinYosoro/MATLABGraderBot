@@ -52,13 +52,12 @@ async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed",
             is_correct, score, reason, tokens = await grader.ainvoke(answer_path, int(qid))
             total_tokens += tokens
         except Exception as e:
-            is_correct, score, reason, tokens = False, 0, f"批改失败: {e}", 0
+            is_correct, score, reason, tokens = False, None, f"批改失败: {e}", 0
 
         log_path, grade_log = log_paths[student]
         grade_log[qid] = [score, reason]
         with open(log_path, "w", encoding="utf-8") as f:
             json.dump(grade_log, f, ensure_ascii=False, indent=2)
-
         return student, qid, score, reason
     
     tasks = [grade_one(s, q, a) for s, q, a in all_tasks]
