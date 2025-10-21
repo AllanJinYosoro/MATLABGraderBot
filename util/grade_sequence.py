@@ -1,28 +1,50 @@
 import os
-from typing import List, Tuple
+import json
+from typing import Union, Dict, Tuple
 import asyncio
 from tqdm import tqdm
+from datetime import datetime
 
 from llm import Agent
 
-async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed") -> None:
+async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed",
+                         overlap_mode: bool = False) -> None:
     """
     依次为每个学生的每道题打分，并最终计算每个学生的总得分和最终comments
 
     Args:
         grader: 用以批改的Agent
         processed_dir: 处理后文件输出目录
+        overlap_mode: 如果为 True，无论 log 中是否已有结果，全部重新批改
     """
     all_tasks = []
+    log_paths = {}
+
     for student in os.listdir(processed_dir):
         student_path = os.path.join(processed_dir, student)
         if not os.path.isdir(student_path):
             continue
-        for qid in os.listdir(student_path):
+
+        log_path = os.path.join(student_path, "grade.log")
+        if not os.path.exists(log_path):
+            grade_log = init_grade_log(student_path)
+        else:
+            try:
+                with open(log_path, "r", encoding="utf-8") as f:
+                    grade_log = json.load(f)
+            except json.JSONDecodeError:
+                print(f"⚠️ {student}/grade.log 格式损坏，重新初始化")
+                grade_log = init_grade_log(student_path)
+
+        log_paths[student] = (log_path, grade_log)
+
+        for qid, (score, comment) in grade_log.items():
             q_path = os.path.join(student_path, qid)
             answer_path = os.path.join(q_path, "answer.md")
             if os.path.isdir(q_path) and os.path.exists(answer_path):
-                all_tasks.append((student, qid, answer_path))
+                # 仅在需要重新批改的情况下建立任务
+                if overlap_mode or score is None:
+                    all_tasks.append((student, qid, answer_path))
 
     async def grade_one(student, qid, answer_path):
         nonlocal total_tokens
@@ -31,6 +53,11 @@ async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed")
             total_tokens += tokens
         except Exception as e:
             is_correct, score, reason, tokens = False, 0, f"批改失败: {e}", 0
+
+        log_path, grade_log = log_paths[student]
+        grade_log[qid] = [score, reason]
+        with open(log_path, "w", encoding="utf-8") as f:
+            json.dump(grade_log, f, ensure_ascii=False, indent=2)
 
         return student, qid, score, reason
     
@@ -57,4 +84,44 @@ async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed")
             f.write(f"{result['total']}\n")
             f.write(" ".join(sorted_comments))
         print(f"学生 {student} 结果已保存到 {grade_path}")
+
+    # === 检查缺漏并汇总日志 ===
+    warn_log_path = os.path.join(processed_dir, "grade_warning.log")
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    missing_records = []
+
+    for student, (log_path, log_obj) in log_paths.items():
+        missing = [qid for qid, (score, _) in log_obj.items() if score is None]
+        if missing:
+            record = f"[{now}] 学生 {student} 未批改题目: {', '.join(missing)}\n"
+            missing_records.append(record)
+
+    if missing_records:
+        with open(warn_log_path, "a", encoding="utf-8") as f:
+            f.writelines(missing_records)
+        print(f"⚠️ 已生成警告日志 {warn_log_path}")
+    else:
+        print("✅ 所有题目均已批改完成。")
+
+    print(f"\n🔹 总 tokens 消耗: {total_tokens}")
+
+def init_grade_log(student_path: str) -> Dict[str, Tuple[Union[int, None], Union[str, None]]]:
+    """
+    初始化学生的 grade.log 文件。
+    格式:
+    {
+        "1": [null, null],
+        "2": [null, null],
+        ...
+    }
+    """
+    log_path = os.path.join(student_path, "grade.log")
+    questions = [d for d in os.listdir(student_path)
+                 if os.path.isdir(os.path.join(student_path, d)) and d.isdigit()]
+    grade_log = {qid: [None, None] for qid in questions}
+
+    with open(log_path, "w", encoding="utf-8") as f:
+        json.dump(grade_log, f, ensure_ascii=False, indent=2)
+
+    return grade_log
 
