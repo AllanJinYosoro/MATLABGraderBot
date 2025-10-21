@@ -126,7 +126,10 @@ def _append_m_dependencies(code_block: str, m_func_dict: Dict[str,str]) -> str:
     called_funcs = []
     for name in m_func_dict:
         # 匹配 “名字(” 的模式，避免混淆变量
-        if re.search(rf'\b{name}\s*\(', code_block):
+        if (
+            re.search(rf'\b{name}\s*\(', code_block) or
+            re.search(rf'@\s*{name}\b', code_block)
+        ):
             called_funcs.append(name)
 
     # 2. 按顺序附加源码
