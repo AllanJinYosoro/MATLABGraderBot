@@ -20,12 +20,12 @@ def is_task_number_right(processed_dir:  Union[str, os.PathLike], tasks_dir:  Un
     """
     Check whether the task dir number of processed dir equals to that of tasks dir
     """
-    def count_task_number(path) -> int:
-        dirs = {int(d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d)) and d.isdigit()}
-        if not dirs: return 0
-        return min(len(dirs),max(dirs))
-    
     return count_task_number(processed_dir) == count_task_number(tasks_dir)
+
+def count_task_number(path) -> int:
+    dirs = {int(d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d)) and d.isdigit()}
+    if not dirs: return 0
+    return min(len(dirs),max(dirs))
 
 def do_all_contain_answer_file(processed_dir:  Union[str, os.PathLike]) -> bool:
     return all(

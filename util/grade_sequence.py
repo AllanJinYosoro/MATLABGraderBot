@@ -6,6 +6,7 @@ from tqdm import tqdm
 from datetime import datetime
 
 from llm import Agent
+from .check_file import count_task_number
 
 async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed",
                          overlap_mode: bool = False) -> None:
@@ -19,6 +20,7 @@ async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed",
     """
     all_tasks = []
     log_paths = {}
+    q_num: int = count_task_number(os.path.join("./data/tasks"))
 
     for student in os.listdir(processed_dir):
         student_path = os.path.join(processed_dir, student)
@@ -27,14 +29,14 @@ async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed",
 
         log_path = os.path.join(student_path, "grade.log")
         if not os.path.exists(log_path):
-            grade_log = init_grade_log(student_path)
+            grade_log = init_grade_log(student_path, q_num=q_num)
         else:
             try:
                 with open(log_path, "r", encoding="utf-8") as f:
                     grade_log = json.load(f)
             except json.JSONDecodeError:
                 print(f"⚠️ {student}/grade.log 格式损坏，重新初始化")
-                grade_log = init_grade_log(student_path)
+                grade_log = init_grade_log(student_path, q_num=q_num)
 
         log_paths[student] = (log_path, grade_log)
 
@@ -104,7 +106,7 @@ async def grade_sequence(grader: Agent, processed_dir: str = "./data/processed",
 
     print(f"\n🔹 总 tokens 消耗: {total_tokens}")
 
-def init_grade_log(student_path: str) -> Dict[str, Tuple[Union[int, None], Union[str, None]]]:
+def init_grade_log(student_path: str, q_num: int) -> Dict[str, Tuple[Union[int, None], Union[str, None]]]:
     """
     初始化学生的 grade.log 文件。
     格式:
@@ -115,9 +117,7 @@ def init_grade_log(student_path: str) -> Dict[str, Tuple[Union[int, None], Union
     }
     """
     log_path = os.path.join(student_path, "grade.log")
-    questions = [d for d in os.listdir(student_path)
-                 if os.path.isdir(os.path.join(student_path, d)) and d.isdigit()]
-    grade_log = {qid: [None, None] for qid in questions}
+    grade_log = {str(qid): [None, None] for qid in range(1, q_num + 1)}
 
     with open(log_path, "w", encoding="utf-8") as f:
         json.dump(grade_log, f, ensure_ascii=False, indent=2)
