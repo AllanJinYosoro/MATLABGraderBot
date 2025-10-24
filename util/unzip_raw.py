@@ -8,6 +8,7 @@ def unzip_and_flatten(zip_path: str, log_path: str, processed_dir: str) -> None:
     解压缩指定路径的 zip 文件，并调整目录结构。
 
     步骤：
+    0. 检查解压目录是否已存在，若存在则删除原 zip 文件并退出。
     1. 将 zip 文件解压到与 zip 名称相同的文件夹中。
     2. 将解压后的文件夹重命名为第一个下划线 (_) 之前的部分。并在processed文件夹中新建同名文件夹
     3. 在解压目录内：
@@ -27,6 +28,12 @@ def unzip_and_flatten(zip_path: str, log_path: str, processed_dir: str) -> None:
     zip_dir = os.path.dirname(zip_path)
     zip_name = os.path.splitext(os.path.basename(zip_path))[0]
     extract_dir = os.path.join(zip_dir, zip_name)
+
+    # step 0: 检查加压缩文件夹是否已经存在
+    if os.path.exists(extract_dir):
+        os.remove(zip_path)
+        print(f"🗑️ 已删除原始 zip 文件: {zip_path}")
+        return
 
     # Step 1: 解压 zip 文件
     with zipfile.ZipFile(zip_path, 'r') as zf:
