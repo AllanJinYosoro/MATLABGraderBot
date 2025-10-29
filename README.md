@@ -33,6 +33,9 @@ OPENAI_API_KEY=your_api_key_here
 ```
 `.env` 文件 不要提交到 Git 仓库，请务必添加到 `.gitignore` 里。
 
+### 2.3 下载UnRAR.exe
+https://www.rarlab.com/rar_add.htm
+
 ## 3.数据准备
 所有数据存放在 data 文件夹下。
 
