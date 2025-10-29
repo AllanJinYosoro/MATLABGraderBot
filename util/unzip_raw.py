@@ -32,13 +32,7 @@ def unzip_and_flatten(archive_path: str, log_path: str, processed_dir: str) -> N
     print(f"✅ 已解压: {extract_dir}")
 
     # Step 2: 重命名文件夹
-    new_name = archive_name.split('_', 1)[0]
-    new_dir = os.path.join(archive_dir, new_name)
-    if os.path.exists(new_dir):
-        shutil.rmtree(new_dir)
-    os.rename(extract_dir, new_dir)
-    os.makedirs(os.path.join(processed_dir, new_name), exist_ok=True)
-    print(f"✅ 已重命名为: {new_dir}")
+    new_dir = rename_file(archive_dir, archive_name, extract_dir, processed_dir)
 
     # Step 3: 调整文件结构
     flatten_directory(new_dir, log_path, archive_name)
@@ -91,6 +85,41 @@ def flatten_directory(target_dir: str, log_path: str, zip_name: str) -> None:
         print(warning_msg.strip())
         with open(log_path, "a", encoding="utf-8") as log_file:
             log_file.write(warning_msg)
+
+def _rename_and_prepare_dirs(base_name: str, archive_dir: str, processed_dir: str) -> (str, str):
+    """公共内部工具函数：提取新名字，并在raw和processed中新建文件夹。如果输入为文件夹，直接重命名。"""
+    new_name = base_name.split('_', 1)[0]
+    new_dir = os.path.join(archive_dir, new_name)
+    if os.path.exists(new_dir):
+        shutil.rmtree(new_dir)
+    os.makedirs(os.path.join(processed_dir, new_name), exist_ok=True)
+    return new_name, new_dir
+
+def rename_file(archive_name: str, extract_dir: str, archive_dir: str, processed_dir: str) -> str:
+    """
+    重命名已解压的文件夹，并在 processed_dir 创建对应子目录。
+    """
+    new_name, new_dir = _rename_and_prepare_dirs(archive_name, archive_dir, processed_dir)
+    os.rename(extract_dir, new_dir)
+    print(f"✅ 已重命名为: {new_dir}")
+    return new_dir
+
+def move_and_rename_single_file(file_path: str, raw_dir: str, processed_dir) -> str:
+    """
+    将单个文件移动到以其前缀命名的新文件夹中，并在 processed_dir 创建对应文件夹。
+    """
+    if not os.path.isfile(file_path):
+        raise FileNotFoundError(f"❌ 文件不存在: {file_path}")
+
+    file_name = os.path.basename(file_path)
+    new_name, new_folder_path = _rename_and_prepare_dirs(file_name, raw_dir, processed_dir)
+
+    os.makedirs(new_folder_path, exist_ok=True)
+    new_file_path = os.path.join(new_folder_path, file_name)
+    shutil.move(file_path, new_file_path)
+
+    print(f"✅ 文件已移动至: {new_file_path}")
+    return new_file_path
 
 
 if __name__ == "__main__":

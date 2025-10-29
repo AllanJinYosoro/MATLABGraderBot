@@ -4,7 +4,7 @@ from typing import Optional, List, Tuple, Dict
 
 from .mlx2others import mlx2others, matlab_engine
 from .check_file import check_process_correctness
-from .unzip_raw import unzip_and_flatten
+from .unzip_raw import unzip_and_flatten, move_and_rename_single_file
 
 def process_raw(
         overlap_mode: bool = False,
@@ -26,6 +26,10 @@ def process_raw(
             zip_path = os.path.join(raw_dir, file)
             log_path = os.path.join(raw_dir, "unzip_warnings.log")
             unzip_and_flatten(zip_path, log_path, processed_dir)
+        elif file.endswith(".mlx") and os.path.isfile(os.path.join(raw_dir, file)):
+            mlx_path = os.path.join(raw_dir, file)
+            move_and_rename_single_file(mlx_path, raw_dir, processed_dir)
+        
 
     with matlab_engine() as eng:
         for root, dirs, files in os.walk(raw_dir):
