@@ -11,5 +11,6 @@ dependencies = [
     "matlabengine>=25.1.2",
     "openai>=1.106.1",
     "python-dotenv>=1.1.1",
+    "rarfile>=4.2",
     "tqdm>=4.67.1",
 ]

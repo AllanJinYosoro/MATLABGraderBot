@@ -22,7 +22,7 @@ def process_raw(
         processed_dir: 处理后文件输出目录
     """
     for file in os.listdir(raw_dir):
-        if file.endswith(".zip") and os.path.isfile(os.path.join(raw_dir, file)):
+        if (file.endswith(".zip") or file.endswith(".rar")) and os.path.isfile(os.path.join(raw_dir, file)):
             zip_path = os.path.join(raw_dir, file)
             log_path = os.path.join(raw_dir, "unzip_warnings.log")
             unzip_and_flatten(zip_path, log_path, processed_dir)
