@@ -32,7 +32,8 @@ def unzip_and_flatten(archive_path: str, log_path: str, processed_dir: str) -> N
     print(f"✅ 已解压: {extract_dir}")
 
     # Step 2: 重命名文件夹
-    new_dir = rename_file(archive_dir, archive_name, extract_dir, processed_dir)
+    # 注意：`rename_file` 的参数顺序为 (archive_name, extract_dir, archive_dir, processed_dir)
+    new_dir = rename_file(archive_name, extract_dir, archive_dir, processed_dir)
 
     # Step 3: 调整文件结构
     flatten_directory(new_dir, log_path, archive_name)
