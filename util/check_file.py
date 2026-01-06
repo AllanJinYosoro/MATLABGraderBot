@@ -6,6 +6,9 @@ def check_process_correctness(student_name: str) -> bool:
     processed_dir = os.path.join("./data/processed", student_name)
     tasks_dir = "./data/tasks"
 
+    if not os.path.isdir(processed_dir):
+        return False
+
     return all([
         is_only_one_mlx(raw_dir=raw_dir),
         is_task_number_right(processed_dir=processed_dir, tasks_dir=tasks_dir),
